@@ -1,10 +1,34 @@
-import petl as etl
-from get_delta import get_delta
-import config
+import pandas as pd
+from config import *
+import csv
 
-table1 = etl.fromcsv(config.SOURCE_PATH)
-table2 = etl.fromcsv(config.TARGET_PATH)
+def get_dict_from_csv(path):
+    result_dict = {}
+    with open(path) as f:
+        reader = csv.reader(f, delimiter=",")
+        count = 0
+        for row in reader:
+            if count != 0:
+                result_dict[row[0]] = row
+            count += 1
+    return result_dict
 
-result_table = get_delta(table1, table2)
+def get_deltas():
+    old_data = get_dict_from_csv(SOURCE_PATH)
+    new_data = get_dict_from_csv(TARGET_PATH)
 
-print(etl.lookall(result_table))
+    deltas = []
+
+    for key,val in new_data.items():
+        if old_data.get(key) is None:
+            deltas += val
+        else:
+            diff_exists = False
+            for i in range(len(val)):
+                if old_data[key][i] != val[i]:
+                    diff_exists = True
+                    break
+            if diff_exists is True:
+                deltas += val
+
+    return deltas
